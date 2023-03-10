@@ -2,9 +2,10 @@ use crate::jsonrpc::error::Web3Error;
 use crate::jsonrpc::request::Request;
 use crate::jsonrpc::response::Response;
 use crate::mem::get_buffer_size;
-use awc::http::header::{self, HeaderMap};
+use awc::http::header;
 use awc::Client;
 use serde::{Deserialize, Serialize};
+use serde_json::from_slice;
 use std::cell::RefCell;
 use std::str;
 use std::sync::{Arc, Mutex};
@@ -14,16 +15,19 @@ pub struct HttpClient {
     id_counter: Arc<Mutex<RefCell<u64>>>,
     url: String,
     client: Client,
+    headers: Vec<(String, String)>,
 }
 
 impl HttpClient {
-    pub fn new(url: &str, headers: &mut HeaderMap) -> Self {
-        let mut client = Client::default();
-        client.headers().replace(headers);
+    pub fn new(url: &str, headers: Vec<(&str, &str)>) -> Self {
         Self {
             id_counter: Arc::new(Mutex::new(RefCell::new(0u64))),
             url: url.to_string(),
-            client,
+            client: Client::default(),
+            headers: headers
+                .into_iter()
+                .map(|(k, v)| (k.to_string(), v.to_string()))
+                .collect(),
         }
     }
 
@@ -48,24 +52,24 @@ impl HttpClient {
     {
         trace!("Making request {} {:?}", method, params);
         let payload = Request::new(self.next_id(), method, params);
-        let res = self
+        let mut request = self
             .client
             .post(&self.url)
-            .append_header((header::CONTENT_TYPE, "application/json"))
-            .timeout(timeout)
-            .send_json(&payload)
-            .await;
+            .append_header((header::CONTENT_TYPE, "application/json"));
+        for header in &self.headers {
+            request = request.insert_header(header.clone());
+        }
+        let res = request.timeout(timeout).send_json(&payload).await;
         let mut res = match res {
             Ok(val) => val,
             Err(e) => return Err(Web3Error::FailedToSend(e)),
         };
 
         trace!("response headers {:?}", res.headers());
-
         let request_size_limit = get_buffer_size();
         trace!("using buffer size of {}", request_size_limit);
-        let decoded: Response<R> = match res.json().limit(request_size_limit).await {
-            Ok(val) => val,
+        let decoded: Response<R> = match res.body().limit(request_size_limit).await {
+            Ok(val) => from_slice(&val.to_vec()).expect("Invalid json format"),
             Err(e) => {
                 return Err(Web3Error::BadResponse(format!(
                     "Size Limit {request_size_limit} Web3 Error {e}"

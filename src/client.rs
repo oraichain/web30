@@ -8,8 +8,6 @@ use crate::jsonrpc::client::HttpClient;
 use crate::jsonrpc::error::Web3Error;
 use crate::types::{Block, Log, NewFilter, SyncingStatus, TransactionRequest, TransactionResponse};
 use crate::types::{ConciseBlock, Data, SendTxOption};
-use awc::error::HeaderValue;
-use awc::http::header::{HeaderMap, HeaderName};
 use clarity::utils::bytes_to_hex_str;
 use clarity::{Address, PrivateKey, Transaction};
 use num256::Uint256;
@@ -26,6 +24,7 @@ pub struct Web3 {
     url: String,
     jsonrpc_client: Arc<HttpClient>,
     timeout: Duration,
+    check_sync: bool,
 }
 
 impl Web3 {
@@ -34,20 +33,16 @@ impl Web3 {
     }
 
     pub fn from_headers(url: &str, timeout: Duration, headers: Vec<(&str, &str)>) -> Self {
-        let mut header_map = HeaderMap::new();
-
-        // append custom header map
-        for (key, val) in headers {
-            header_map.append(
-                HeaderName::from_bytes(key.as_bytes()).unwrap(),
-                HeaderValue::from_bytes(val.as_bytes()).unwrap(),
-            );
-        }
         Self {
-            jsonrpc_client: Arc::new(HttpClient::new(url, &mut header_map)),
+            jsonrpc_client: Arc::new(HttpClient::new(url, headers)),
             timeout,
             url: url.to_string(),
+            check_sync: true,
         }
+    }
+
+    pub fn set_check_sync(&mut self, check_sync: bool) {
+        self.check_sync = check_sync;
     }
 
     pub fn get_timeout(&self) -> Duration {
@@ -191,6 +186,9 @@ impl Web3 {
 
     /// Returns a bool indicating whether our eth node is currently syncing or not
     pub async fn eth_syncing(&self) -> Result<bool, Web3Error> {
+        if !self.check_sync {
+            return Ok(false);
+        }
         let res: SyncingStatus = self
             .jsonrpc_client
             .request_method("eth_syncing", Vec::<String>::new(), self.timeout)
