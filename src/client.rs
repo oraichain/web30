@@ -33,7 +33,7 @@ impl Web3 {
         Self::from_headers(url, timeout, vec![])
     }
 
-    pub fn from_headers(url: &str, timeout: Duration, headers: Vec<(String, String)>) -> Self {
+    pub fn from_headers(url: &str, timeout: Duration, headers: Vec<(&str, &str)>) -> Self {
         let mut header_map = HeaderMap::new();
 
         // append custom header map
