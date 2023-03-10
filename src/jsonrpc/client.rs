@@ -2,7 +2,7 @@ use crate::jsonrpc::error::Web3Error;
 use crate::jsonrpc::request::Request;
 use crate::jsonrpc::response::Response;
 use crate::mem::get_buffer_size;
-use awc::http::header;
+use awc::http::header::{self, HeaderMap};
 use awc::Client;
 use serde::{Deserialize, Serialize};
 use std::cell::RefCell;
@@ -17,11 +17,13 @@ pub struct HttpClient {
 }
 
 impl HttpClient {
-    pub fn new(url: &str) -> Self {
+    pub fn new(url: &str, headers: &mut HeaderMap) -> Self {
+        let mut client = Client::default();
+        client.headers().replace(headers);
         Self {
             id_counter: Arc::new(Mutex::new(RefCell::new(0u64))),
             url: url.to_string(),
-            client: Client::default(),
+            client,
         }
     }
 

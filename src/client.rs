@@ -8,6 +8,8 @@ use crate::jsonrpc::client::HttpClient;
 use crate::jsonrpc::error::Web3Error;
 use crate::types::{Block, Log, NewFilter, SyncingStatus, TransactionRequest, TransactionResponse};
 use crate::types::{ConciseBlock, Data, SendTxOption};
+use awc::error::HeaderValue;
+use awc::http::header::{HeaderMap, HeaderName};
 use clarity::utils::bytes_to_hex_str;
 use clarity::{Address, PrivateKey, Transaction};
 use num256::Uint256;
@@ -28,8 +30,21 @@ pub struct Web3 {
 
 impl Web3 {
     pub fn new(url: &str, timeout: Duration) -> Self {
+        Self::from_headers(url, timeout, vec![])
+    }
+
+    pub fn from_headers(url: &str, timeout: Duration, headers: Vec<(String, String)>) -> Self {
+        let mut header_map = HeaderMap::new();
+
+        // append custom header map
+        for (key, val) in headers {
+            header_map.append(
+                HeaderName::from_bytes(key.as_bytes()).unwrap(),
+                HeaderValue::from_bytes(val.as_bytes()).unwrap(),
+            );
+        }
         Self {
-            jsonrpc_client: Arc::new(HttpClient::new(url)),
+            jsonrpc_client: Arc::new(HttpClient::new(url, &mut header_map)),
             timeout,
             url: url.to_string(),
         }
