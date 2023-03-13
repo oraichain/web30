@@ -70,11 +70,12 @@ impl Web3 {
     }
 
     pub async fn net_version(&self) -> Result<u64, Web3Error> {
-        let ret: Result<String, Web3Error> = self
+        let ret: Uint256 = self
             .jsonrpc_client
             .request_method("net_version", Vec::<String>::new(), self.timeout)
-            .await;
-        Ok(ret?.parse()?)
+            .await?;
+
+        ret.to_u64().ok_or(Web3Error::BadResponse(ret.to_string()))
     }
 
     pub async fn eth_new_filter(&self, new_filter: NewFilter) -> Result<Uint256, Web3Error> {
@@ -880,4 +881,23 @@ fn test_syncing_check_functions() {
         let val = web3.eth_get_latest_block().await;
         //println!("{:?}", val);
     });
+}
+
+#[test]
+fn test_tron_sync() {
+    use actix::System;
+
+    let mut web3 = Web3::from_headers(
+        "https://api.trongrid.io/jsonrpc",
+        Duration::from_secs(120),
+        vec![("TRON-PRO-API-KEY", option_env!("API_KEY").unwrap())],
+    );
+
+    web3.set_check_sync(false);
+
+    let runner = System::new();
+
+    runner.block_on(async move {
+        assert_eq!(728126428u64, web3.net_version().await.unwrap());
+    })
 }

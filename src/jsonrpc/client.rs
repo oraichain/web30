@@ -5,7 +5,6 @@ use crate::mem::get_buffer_size;
 use awc::http::header;
 use awc::Client;
 use serde::{Deserialize, Serialize};
-use serde_json::from_slice;
 use std::cell::RefCell;
 use std::str;
 use std::sync::{Arc, Mutex};
@@ -68,8 +67,8 @@ impl HttpClient {
         trace!("response headers {:?}", res.headers());
         let request_size_limit = get_buffer_size();
         trace!("using buffer size of {}", request_size_limit);
-        let decoded: Response<R> = match res.body().limit(request_size_limit).await {
-            Ok(val) => from_slice(&val.to_vec()).expect("Invalid json format"),
+        let decoded: Response<R> = match res.json().limit(request_size_limit).await {
+            Ok(val) => val,
             Err(e) => {
                 return Err(Web3Error::BadResponse(format!(
                     "Size Limit {request_size_limit} Web3 Error {e}"
