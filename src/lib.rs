@@ -19,5 +19,6 @@ pub mod gas_estimator;
 pub mod jsonrpc;
 mod mem;
 pub mod types;
+pub mod utils;
 
 pub use event_utils::address_to_event;
