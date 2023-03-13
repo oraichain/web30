@@ -12,6 +12,7 @@ use clarity::utils::bytes_to_hex_str;
 use clarity::{Address, PrivateKey, Transaction};
 use num256::Uint256;
 use num_traits::{ToPrimitive, Zero};
+use std::collections::HashMap;
 use std::{cmp::min, time::Duration};
 use std::{sync::Arc, time::Instant};
 use tokio::time::sleep as delay_for;
@@ -25,20 +26,22 @@ pub struct Web3 {
     jsonrpc_client: Arc<HttpClient>,
     timeout: Duration,
     check_sync: bool,
+    headers: HashMap<String, String>,
 }
 
 impl Web3 {
     pub fn new(url: &str, timeout: Duration) -> Self {
-        Self::from_headers(url, timeout, vec![])
-    }
-
-    pub fn from_headers(url: &str, timeout: Duration, headers: Vec<(&str, &str)>) -> Self {
         Self {
-            jsonrpc_client: Arc::new(HttpClient::new(url, headers)),
+            jsonrpc_client: Arc::new(HttpClient::new(url)),
             timeout,
             url: url.to_string(),
             check_sync: true,
+            headers: HashMap::new(),
         }
+    }
+
+    pub fn set_header(&mut self, key: &str, value: &str) {
+        self.headers.insert(key.to_string(), value.to_string());
     }
 
     pub fn set_check_sync(&mut self, check_sync: bool) {
@@ -55,7 +58,12 @@ impl Web3 {
 
     pub async fn eth_accounts(&self) -> Result<Vec<Address>, Web3Error> {
         self.jsonrpc_client
-            .request_method("eth_accounts", Vec::<String>::new(), self.timeout)
+            .request_method(
+                "eth_accounts",
+                Vec::<String>::new(),
+                self.timeout,
+                &self.headers,
+            )
             .await
     }
 
@@ -63,7 +71,12 @@ impl Web3 {
     pub async fn eth_chainid(&self) -> Result<Option<Uint256>, Web3Error> {
         let ret: Result<Uint256, Web3Error> = self
             .jsonrpc_client
-            .request_method("eth_chainId", Vec::<String>::new(), self.timeout)
+            .request_method(
+                "eth_chainId",
+                Vec::<String>::new(),
+                self.timeout,
+                &self.headers,
+            )
             .await;
 
         Ok(Some(ret?))
@@ -72,7 +85,12 @@ impl Web3 {
     pub async fn net_version(&self) -> Result<u64, Web3Error> {
         let ret: Uint256 = self
             .jsonrpc_client
-            .request_method("net_version", Vec::<String>::new(), self.timeout)
+            .request_method(
+                "net_version",
+                Vec::<String>::new(),
+                self.timeout,
+                &self.headers,
+            )
             .await?;
 
         ret.to_u64().ok_or(Web3Error::BadResponse(ret.to_string()))
@@ -80,7 +98,12 @@ impl Web3 {
 
     pub async fn eth_new_filter(&self, new_filter: NewFilter) -> Result<Uint256, Web3Error> {
         self.jsonrpc_client
-            .request_method("eth_newFilter", vec![new_filter], self.timeout)
+            .request_method(
+                "eth_newFilter",
+                vec![new_filter],
+                self.timeout,
+                &self.headers,
+            )
             .await
     }
 
@@ -90,6 +113,7 @@ impl Web3 {
                 "eth_getFilterChanges",
                 vec![format!("{:#x}", filter_id.clone())],
                 self.timeout,
+                &self.headers,
             )
             .await
     }
@@ -100,13 +124,14 @@ impl Web3 {
                 "eth_uninstallFilter",
                 vec![format!("{:#x}", filter_id.clone())],
                 self.timeout,
+                &self.headers,
             )
             .await
     }
 
     pub async fn eth_get_logs(&self, new_filter: NewFilter) -> Result<Vec<Log>, Web3Error> {
         self.jsonrpc_client
-            .request_method("eth_getLogs", vec![new_filter], self.timeout)
+            .request_method("eth_getLogs", vec![new_filter], self.timeout, &self.headers)
             .await
     }
 
@@ -119,6 +144,7 @@ impl Web3 {
                         "eth_getTransactionCount",
                         vec![address.to_string(), "latest".to_string()],
                         self.timeout,
+                        &self.headers,
                     )
                     .await
             }
@@ -136,7 +162,12 @@ impl Web3 {
             false => {
                 let median_gas = self
                     .jsonrpc_client
-                    .request_method("eth_gasPrice", Vec::<String>::new(), self.timeout)
+                    .request_method(
+                        "eth_gasPrice",
+                        Vec::<String>::new(),
+                        self.timeout,
+                        &self.headers,
+                    )
                     .await?;
                 if let Some(gas) = self.get_base_fee_per_gas().await? {
                     if median_gas < gas {
@@ -163,7 +194,12 @@ impl Web3 {
         }
 
         self.jsonrpc_client
-            .request_method("eth_estimateGas", vec![transaction], self.timeout)
+            .request_method(
+                "eth_estimateGas",
+                vec![transaction],
+                self.timeout,
+                &self.headers,
+            )
             .await
     }
 
@@ -176,6 +212,7 @@ impl Web3 {
                         "eth_getBalance",
                         vec![address.to_string(), "latest".to_string()],
                         self.timeout,
+                        &self.headers,
                     )
                     .await
             }
@@ -192,7 +229,12 @@ impl Web3 {
         }
         let res: SyncingStatus = self
             .jsonrpc_client
-            .request_method("eth_syncing", Vec::<String>::new(), self.timeout)
+            .request_method(
+                "eth_syncing",
+                Vec::<String>::new(),
+                self.timeout,
+                &self.headers,
+            )
             .await?;
         match res {
             SyncingStatus::Syncing { .. } => Ok(true),
@@ -205,7 +247,12 @@ impl Web3 {
         transactions: Vec<TransactionRequest>,
     ) -> Result<Uint256, Web3Error> {
         self.jsonrpc_client
-            .request_method("eth_sendTransaction", transactions, self.timeout)
+            .request_method(
+                "eth_sendTransaction",
+                transactions,
+                self.timeout,
+                &self.headers,
+            )
             .await
     }
 
@@ -214,7 +261,12 @@ impl Web3 {
         match self.eth_syncing().await? {
             false => {
                 self.jsonrpc_client
-                    .request_method("eth_call", (transaction, "latest"), self.timeout)
+                    .request_method(
+                        "eth_call",
+                        (transaction, "latest"),
+                        self.timeout,
+                        &self.headers,
+                    )
                     .await
             }
             true => Err(Web3Error::SyncingNode(
@@ -235,6 +287,7 @@ impl Web3 {
                     "eth_call",
                     (transaction, format!("{:#x}", block.0)), // THIS IS THE MAGIC I NEEDED
                     self.timeout,
+                    &self.headers,
                 )
                 .await
         } else if self.eth_syncing().await? {
@@ -252,7 +305,12 @@ impl Web3 {
     /// Retrieves the latest synced block number regardless of state of eth node
     pub async fn eth_synced_block_number(&self) -> Result<Uint256, Web3Error> {
         self.jsonrpc_client
-            .request_method("eth_blockNumber", Vec::<String>::new(), self.timeout)
+            .request_method(
+                "eth_blockNumber",
+                Vec::<String>::new(),
+                self.timeout,
+                &self.headers,
+            )
             .await
     }
 
@@ -273,6 +331,7 @@ impl Web3 {
                     "eth_getBlockByNumber",
                     (format!("{block_number:#x}"), true),
                     self.timeout,
+                    &self.headers,
                 )
                 .await
         } else if self.eth_syncing().await? {
@@ -297,6 +356,7 @@ impl Web3 {
                     "eth_getBlockByNumber",
                     (format!("{block_number:#x}"), false),
                     self.timeout,
+                    &self.headers,
                 )
                 .await
         } else if self.eth_syncing().await? {
@@ -315,7 +375,12 @@ impl Web3 {
         match self.eth_syncing().await? {
             false => {
                 self.jsonrpc_client
-                    .request_method("eth_getBlockByNumber", ("latest", false), self.timeout)
+                    .request_method(
+                        "eth_getBlockByNumber",
+                        ("latest", false),
+                        self.timeout,
+                        &self.headers,
+                    )
                     .await
             }
             _ => Err(Web3Error::SyncingNode(
@@ -329,7 +394,12 @@ impl Web3 {
         match self.eth_syncing().await? {
             false => {
                 self.jsonrpc_client
-                    .request_method("eth_getBlockByNumber", ("latest", true), self.timeout)
+                    .request_method(
+                        "eth_getBlockByNumber",
+                        ("latest", true),
+                        self.timeout,
+                        &self.headers,
+                    )
                     .await
             }
             _ => Err(Web3Error::SyncingNode(
@@ -343,7 +413,12 @@ impl Web3 {
         match self.eth_syncing().await? {
             false => {
                 self.jsonrpc_client
-                    .request_method("eth_getBlockByNumber", ("finalized", false), self.timeout)
+                    .request_method(
+                        "eth_getBlockByNumber",
+                        ("finalized", false),
+                        self.timeout,
+                        &self.headers,
+                    )
                     .await
             }
             _ => Err(Web3Error::SyncingNode(
@@ -357,7 +432,12 @@ impl Web3 {
         match self.eth_syncing().await? {
             false => {
                 self.jsonrpc_client
-                    .request_method("eth_getBlockByNumber", ("finalized", true), self.timeout)
+                    .request_method(
+                        "eth_getBlockByNumber",
+                        ("finalized", true),
+                        self.timeout,
+                        &self.headers,
+                    )
                     .await
             }
             _ => Err(Web3Error::SyncingNode(
@@ -372,6 +452,7 @@ impl Web3 {
                 "eth_sendRawTransaction",
                 vec![format!("0x{}", bytes_to_hex_str(&data))],
                 self.timeout,
+                &self.headers,
             )
             .await
     }
@@ -391,13 +472,19 @@ impl Web3 {
                 // returning it we'll keep it consistent.
                 vec![format!("{hash:#066x}")],
                 self.timeout,
+                &self.headers,
             )
             .await
     }
 
     pub async fn evm_snapshot(&self) -> Result<Uint256, Web3Error> {
         self.jsonrpc_client
-            .request_method("evm_snapshot", Vec::<String>::new(), self.timeout)
+            .request_method(
+                "evm_snapshot",
+                Vec::<String>::new(),
+                self.timeout,
+                &self.headers,
+            )
             .await
     }
 
@@ -407,6 +494,7 @@ impl Web3 {
                 "evm_revert",
                 vec![format!("{snapshot_id:#066x}")],
                 self.timeout,
+                &self.headers,
             )
             .await
     }
@@ -887,12 +975,8 @@ fn test_syncing_check_functions() {
 fn test_tron_sync() {
     use actix::System;
 
-    let mut web3 = Web3::from_headers(
-        "https://api.trongrid.io/jsonrpc",
-        Duration::from_secs(120),
-        vec![("TRON-PRO-API-KEY", option_env!("API_KEY").unwrap())],
-    );
-
+    let mut web3 = Web3::new("https://api.trongrid.io/jsonrpc", Duration::from_secs(120));
+    web3.set_header("TRON-PRO-API-KEY", option_env!("API_KEY").unwrap());
     web3.set_check_sync(false);
 
     let runner = System::new();

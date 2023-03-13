@@ -6,6 +6,7 @@ use awc::http::header;
 use awc::Client;
 use serde::{Deserialize, Serialize};
 use std::cell::RefCell;
+use std::collections::HashMap;
 use std::str;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
@@ -14,19 +15,14 @@ pub struct HttpClient {
     id_counter: Arc<Mutex<RefCell<u64>>>,
     url: String,
     client: Client,
-    headers: Vec<(String, String)>,
 }
 
 impl HttpClient {
-    pub fn new(url: &str, headers: Vec<(&str, &str)>) -> Self {
+    pub fn new(url: &str) -> Self {
         Self {
             id_counter: Arc::new(Mutex::new(RefCell::new(0u64))),
             url: url.to_string(),
             client: Client::default(),
-            headers: headers
-                .into_iter()
-                .map(|(k, v)| (k.to_string(), v.to_string()))
-                .collect(),
         }
     }
 
@@ -43,6 +39,7 @@ impl HttpClient {
         method: &str,
         params: T,
         timeout: Duration,
+        headers: &HashMap<String, String>,
     ) -> Result<R, Web3Error>
     where
         for<'de> R: Deserialize<'de>,
@@ -55,8 +52,8 @@ impl HttpClient {
             .client
             .post(&self.url)
             .append_header((header::CONTENT_TYPE, "application/json"));
-        for header in &self.headers {
-            request = request.insert_header(header.clone());
+        for (key, value) in headers {
+            request = request.insert_header((key.clone(), value.clone()));
         }
         let res = request.timeout(timeout).send_json(&payload).await;
         let mut res = match res {
