@@ -990,7 +990,6 @@ fn test_tron_sync() {
     use actix::System;
 
     let mut web3 = Web3::new("https://api.trongrid.io/jsonrpc", Duration::from_secs(120));
-    web3.set_header("TRON-PRO-API-KEY", option_env!("API_KEY").unwrap());
     web3.set_check_sync(false);
 
     let runner = System::new();
