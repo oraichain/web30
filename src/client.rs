@@ -44,6 +44,10 @@ impl Web3 {
         self.headers.insert(key.to_string(), value.to_string());
     }
 
+    pub fn get_header(&self, key: &str) -> String {
+        self.headers.get(key).cloned().unwrap_or_default()
+    }
+
     pub fn set_check_sync(&mut self, check_sync: bool) {
         self.check_sync = check_sync;
     }
