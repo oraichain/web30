@@ -648,25 +648,35 @@ impl Web3 {
         own_address: Address,
         height: Option<Uint256>,
     ) -> Result<Vec<u8>, Web3Error> {
-        let our_balance = self.eth_get_balance(own_address).await?;
-        if our_balance.is_zero() || our_balance < ETHEREUM_INTRINSIC_GAS.into() {
-            // We only know that the balance is insufficient, we don't know how much gas is needed
-            return Err(Web3Error::InsufficientGas {
-                balance: our_balance,
-                base_gas: ETHEREUM_INTRINSIC_GAS.into(),
-                gas_required: ETHEREUM_INTRINSIC_GAS.into(),
-            });
-        }
+        let (gas, gas_price, nonce) = if self.check_sync {
+            let our_balance = self.eth_get_balance(own_address).await?;
+            if our_balance.is_zero() || our_balance < ETHEREUM_INTRINSIC_GAS.into() {
+                // We only know that the balance is insufficient, we don't know how much gas is needed
+                return Err(Web3Error::InsufficientGas {
+                    balance: our_balance,
+                    base_gas: ETHEREUM_INTRINSIC_GAS.into(),
+                    gas_required: ETHEREUM_INTRINSIC_GAS.into(),
+                });
+            }
 
-        let nonce = self.eth_get_transaction_count(own_address).await?;
+            let nonce = self.eth_get_transaction_count(own_address).await?;
+            let gas = self.simulated_gas_price_and_limit(our_balance).await?;
+            (
+                Some(gas.limit.into()),
+                Some(gas.price.into()),
+                Some(nonce.into()),
+            )
+        } else {
+            // no check syncing, this is likely in tron case, or we just need to query (without worrying about the syncing state)
+            (None, None, None)
+        };
 
-        let gas = self.simulated_gas_price_and_limit(our_balance).await?;
         let transaction = TransactionRequest {
             from: Some(own_address),
             to: contract_address,
-            gas: Some(gas.limit.into()),
-            nonce: Some(nonce.into()),
-            gas_price: Some(gas.price.into()),
+            gas,
+            nonce,
+            gas_price,
             value: Some(value.into()),
             data: Some(data.clone().into()),
         };
