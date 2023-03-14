@@ -48,6 +48,10 @@ impl Web3 {
         self.headers.get(key).cloned().unwrap_or_default()
     }
 
+    pub fn header_keys(&self) -> Vec<String> {
+        self.headers.keys().map(|k| k.clone()).collect()
+    }
+
     pub fn set_check_sync(&mut self, check_sync: bool) {
         self.check_sync = check_sync;
     }
