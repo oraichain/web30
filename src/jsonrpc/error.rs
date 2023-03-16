@@ -19,7 +19,7 @@ pub enum Web3Error {
         message: String,
         data: String,
     },
-    TronRestError(TronError),
+    TronError(TronError),
     InsufficientGas {
         balance: Uint256,
         base_gas: Uint256,
@@ -57,14 +57,14 @@ impl From<Elapsed> for Web3Error {
 
 impl From<TronError> for Web3Error {
     fn from(error: TronError) -> Self {
-        Web3Error::TronRestError(error)
+        Web3Error::TronError(error)
     }
 }
 
 impl Display for Web3Error {
     fn fmt(&self, f: &mut Formatter) -> Result {
         match self {
-            Web3Error::TronRestError(val) => write!(f, "Tron REST error {}", val),
+            Web3Error::TronError(val) => write!(f, "Tron REST error {}", val),
             Web3Error::BadResponse(val) => write!(f, "Web3 bad response {val}"),
             Web3Error::BadInput(val) => write!(f, "Web3 bad input {val}"),
             Web3Error::FailedToSend(val) => write!(f, "Web3 Failed to send {val}"),

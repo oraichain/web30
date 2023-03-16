@@ -630,7 +630,7 @@ impl Web3 {
             }
         };
 
-        let data = encode_call(selector, &tokens)?;
+        let data = encode_call(selector, tokens)?;
 
         let mut gas_limit = if let Some(gl) = gas_limit {
             gl
