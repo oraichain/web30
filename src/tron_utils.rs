@@ -50,7 +50,7 @@ pub async fn send_transaction(
     let mut tx = client
         .trigger_contract(
             &method_call,
-            value.to_u64().unwrap_or_default(),
+            value.to_u64().expect("Value overflow!"),
             Some(fee_limit),
         )
         .await?;
