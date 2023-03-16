@@ -1,7 +1,7 @@
 [package]
 name = "web30"
 version = "0.23.1"
-authors = ["Michal Papierski", "Jehan Tremback", "Justin Kilpatrick"]
+authors = ["Michal Papierski", "Jehan Tremback", "Justin Kilpatrick", "tu@orai.io"]
 description = "Async endian safe web3 library"
 license = "Apache-2.0"
 edition = "2021"
@@ -21,8 +21,6 @@ lazy_static = "1.4"
 regex = "1.7.0"
 log = "0.4"
 num-traits = "0.2"
-sha2 = "0.10"
-hex = "0.4.3"
 
 [dev-dependencies]
 actix = "0.13"
