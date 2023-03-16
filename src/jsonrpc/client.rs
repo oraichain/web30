@@ -7,7 +7,6 @@ use awc::Client;
 use serde::{Deserialize, Serialize};
 use std::cell::RefCell;
 use std::collections::HashMap;
-use std::str::{self, Bytes};
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 

@@ -415,17 +415,14 @@ impl Web3 {
     pub async fn eth_get_latest_block(&self) -> Result<ConciseBlock, Web3Error> {
         match self.eth_syncing().await? {
             false => {
-                let result = self
-                    .jsonrpc_client
+                self.jsonrpc_client
                     .request_method(
                         "eth_getBlockByNumber",
                         ("latest", false),
                         self.timeout,
                         &self.headers,
                     )
-                    .await;
-                println!("eth get latest block: {:?}", result);
-                return result;
+                    .await
             }
             _ => Err(Web3Error::SyncingNode(
                 "Cannot perform eth_get_latest_block".to_string(),
