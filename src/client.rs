@@ -28,7 +28,7 @@ const ETHEREUM_INTRINSIC_GAS: u32 = 21000;
 #[derive(Clone)]
 pub struct Web3 {
     jsonrpc_client: Arc<HttpClient>,
-    timeout: Duration,
+    pub timeout: Duration,
     check_sync: bool,
     headers: HashMap<String, String>,
     tron: Option<Arc<RpcClient>>,
@@ -95,14 +95,6 @@ impl Web3 {
 
     pub fn set_check_sync(&mut self, check_sync: bool) {
         self.check_sync = check_sync;
-    }
-
-    pub fn get_timeout(&self) -> Duration {
-        self.timeout
-    }
-
-    pub fn get_url(&self) -> String {
-        self.jsonrpc_client.get_url()
     }
 
     pub async fn eth_accounts(&self) -> Result<Vec<Address>, Web3Error> {
