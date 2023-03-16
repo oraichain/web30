@@ -65,16 +65,12 @@ impl Web3 {
         options: Vec<SendTxOption>,
     ) -> Result<Uint256, Web3Error> {
         let own_address = eth_private_key.to_address();
-        // function approve(address _approved, uint256 _tokenId)
-        let payload = encode_call(
-            "approve(address,uint256)",
-            &[target_contract.into(), Token::Uint(token_id)],
-        )?;
 
         let txid = self
             .send_transaction(
                 erc721,
-                payload,
+                "approve(address,uint256)",
+                &[target_contract.into(), Token::Uint(token_id)],
                 0u32.into(),
                 own_address,
                 eth_private_key,
@@ -125,14 +121,12 @@ impl Web3 {
         let tx_hash = self
             .send_transaction(
                 erc721,
-                encode_call(
-                    "transferFrom(address,address,uint256)",
-                    &[
-                        sender_address.into(),
-                        recipient.into(),
-                        Token::Uint(token_id),
-                    ],
-                )?,
+                "transferFrom(address,address,uint256)",
+                &[
+                    sender_address.into(),
+                    recipient.into(),
+                    Token::Uint(token_id),
+                ],
                 0u32.into(),
                 sender_address,
                 sender_private_key,

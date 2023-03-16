@@ -6,12 +6,17 @@
 //!
 use crate::jsonrpc::client::HttpClient;
 use crate::jsonrpc::error::Web3Error;
+use crate::tron_utils;
 use crate::types::{Block, Log, NewFilter, SyncingStatus, TransactionRequest, TransactionResponse};
 use crate::types::{ConciseBlock, Data, SendTxOption};
+use clarity::abi::{encode_call, Token};
 use clarity::utils::bytes_to_hex_str;
 use clarity::{Address, PrivateKey, Transaction};
+use heliosphere::core::transaction::TransactionId;
+use heliosphere::RpcClient;
 use num256::Uint256;
 use num_traits::{ToPrimitive, Zero};
+use regex::{Regex, RegexBuilder};
 use std::collections::HashMap;
 use std::{cmp::min, time::Duration};
 use std::{sync::Arc, time::Instant};
@@ -27,16 +32,51 @@ pub struct Web3 {
     timeout: Duration,
     check_sync: bool,
     headers: HashMap<String, String>,
+    tron: Option<RpcClient>,
 }
 
 impl Web3 {
     pub fn new(url: &str, timeout: Duration) -> Self {
-        Self {
-            jsonrpc_client: Arc::new(HttpClient::new(url)),
-            timeout,
-            url: url.to_string(),
-            check_sync: true,
-            headers: HashMap::new(),
+        lazy_static::lazy_static! {
+            static ref TRON_URL_REGEX: Regex = RegexBuilder::new(r#"^(.*)/jsonrpc/?(.*)$"#).build().unwrap();
+        }
+
+        if let Some(matched) = TRON_URL_REGEX.captures(url) {
+            let (tron_url, api_key) = (&matched[1], &matched[2]);
+
+            // add api key for some providers following eth rpc standard
+            let headers = match tron_url {
+                "https://api.trongrid.io" => {
+                    HashMap::from([("TRON-PRO-API-KEY".to_string(), api_key.to_string())])
+                }
+                "https://trx.getblock.io/mainnet/fullnode" => {
+                    HashMap::from([("x-api-key".to_string(), api_key.to_string())])
+                }
+                _ => HashMap::new(),
+            };
+
+            let mut tron = RpcClient::new(tron_url, timeout).expect("Invalid url format");
+            for (key, val) in &headers {
+                tron.set_header(key, val);
+            }
+
+            Self {
+                jsonrpc_client: Arc::new(HttpClient::new(url)),
+                timeout,
+                url: format!("{}/jsonrpc", tron_url),
+                check_sync: false,
+                headers,
+                tron: Some(tron),
+            }
+        } else {
+            Self {
+                jsonrpc_client: Arc::new(HttpClient::new(url)),
+                timeout,
+                url: url.to_string(),
+                check_sync: true,
+                headers: HashMap::new(),
+                tron: None,
+            }
         }
     }
 
@@ -144,6 +184,10 @@ impl Web3 {
     }
 
     pub async fn eth_get_transaction_count(&self, address: Address) -> Result<Uint256, Web3Error> {
+        // tron does not support this method
+        if self.tron.is_some() {
+            return Ok(Uint256::zero());
+        }
         //check if the node is still syncing
         match self.eth_syncing().await? {
             false => {
@@ -519,12 +563,20 @@ impl Web3 {
     pub async fn send_transaction(
         &self,
         to_address: Address,
-        data: Vec<u8>,
+        selector: &str,
+        tokens: &[Token],
         value: Uint256,
         own_address: Address,
         secret: PrivateKey,
         options: Vec<SendTxOption>,
     ) -> Result<Uint256, Web3Error> {
+        if let Some(tron) = &self.tron {
+            return tron_utils::send_transaction(
+                tron, to_address, selector, tokens, value, secret, options,
+            )
+            .await;
+        }
+
         let mut gas_price = None;
         let mut gas_price_multiplier = 1f32;
         let mut gas_limit_multiplier = 1f32;
@@ -539,7 +591,8 @@ impl Web3 {
                 gas_required: ETHEREUM_INTRINSIC_GAS.into(),
             });
         }
-        let mut nonce = self.eth_get_transaction_count(own_address).await?;
+        // default nonce is zero
+        let mut nonce = Uint256::zero();
 
         for option in options {
             match option {
@@ -550,6 +603,11 @@ impl Web3 {
                 SendTxOption::NetworkId(ni) => network_id = Some(ni),
                 SendTxOption::Nonce(n) => nonce = n,
             }
+        }
+
+        // nonce can be pass
+        if nonce.is_zero() {
+            nonce = self.eth_get_transaction_count(own_address).await?;
         }
 
         let mut gas_price = if let Some(gp) = gas_price {
@@ -567,6 +625,8 @@ impl Web3 {
                 gas_price * (gas_price_multiplier.round() as u128).into()
             }
         };
+
+        let data = encode_call(selector, &tokens)?;
 
         let mut gas_limit = if let Some(gl) = gas_limit {
             gl
@@ -707,10 +767,27 @@ impl Web3 {
         }
     }
 
+    pub async fn wait_for_transaction(
+        &self,
+        tx_hash: Uint256,
+        timeout: Duration,
+        blocks_to_wait: Option<Uint256>,
+    ) -> Result<Uint256, Web3Error> {
+        // if tron then process as tron
+        if let Some(tron) = &self.tron {
+            let tx_id = TransactionId(tx_hash.to_be_bytes());
+            tron.await_confirmation(tx_id, timeout).await?;
+        } else {
+            self.eth_wait_for_transaction(tx_hash, timeout, blocks_to_wait)
+                .await?;
+        }
+        Ok(tx_hash)
+    }
+
     /// Waits for a transaction with the given hash to be included in a block
     /// it will wait for at most timeout time and optionally can wait for n
     /// blocks to have passed
-    pub async fn wait_for_transaction(
+    pub async fn eth_wait_for_transaction(
         &self,
         tx_hash: Uint256,
         timeout: Duration,
@@ -990,7 +1067,7 @@ fn test_syncing_check_functions() {
 }
 
 #[test]
-fn test_tron_sync() {
+fn tron_sync() {
     use actix::System;
 
     let mut web3 = Web3::new("https://api.trongrid.io/jsonrpc", Duration::from_secs(120));
@@ -1001,4 +1078,18 @@ fn test_tron_sync() {
     runner.block_on(async move {
         assert_eq!(728126428u64, web3.net_version().await.unwrap());
     })
+}
+
+#[test]
+fn url_matching() {
+    let reg = RegexBuilder::new(r#"^(.*)/jsonrpc/?(.*)$"#)
+        .build()
+        .unwrap();
+    let matched = reg
+        .captures(
+            "https://trx.getblock.io/mainnet/fullnode/jsonrpc/9ec2f6d8-9cec-4157-93d4-f44b1b7418d8",
+        )
+        .unwrap();
+    assert_eq!(&matched[1], "https://trx.getblock.io/mainnet/fullnode");
+    assert_eq!(&matched[2], "9ec2f6d8-9cec-4157-93d4-f44b1b7418d8");
 }

@@ -2,7 +2,7 @@ use crate::amm::WETH_CONTRACT_ADDRESS;
 use crate::{client::Web3, jsonrpc::error::Web3Error};
 use clarity::abi::Token;
 use clarity::Address;
-use clarity::{abi::encode_call, PrivateKey, Uint256};
+use clarity::{PrivateKey, Uint256};
 use std::time::Duration;
 use tokio::time::timeout as future_timeout;
 
@@ -18,10 +18,17 @@ impl Web3 {
         let own_address = secret.to_address();
         let sig = "deposit()";
         let tokens = [];
-        let payload = encode_call(sig, &tokens).unwrap();
         let weth_address = weth_address.unwrap_or(*WETH_CONTRACT_ADDRESS);
         let txid = self
-            .send_transaction(weth_address, payload, amount, own_address, secret, vec![])
+            .send_transaction(
+                weth_address,
+                sig,
+                &tokens,
+                amount,
+                own_address,
+                secret,
+                vec![],
+            )
             .await?;
 
         if let Some(timeout) = wait_timeout {
@@ -40,12 +47,12 @@ impl Web3 {
         let own_address = secret.to_address();
         let sig = "withdraw(uint256)";
         let tokens = [Token::Uint(amount)];
-        let payload = encode_call(sig, &tokens).unwrap();
         let weth_address = weth_address.unwrap_or(*WETH_CONTRACT_ADDRESS);
         let txid = self
             .send_transaction(
                 weth_address,
-                payload,
+                sig,
+                &tokens,
                 0u16.into(),
                 own_address,
                 secret,

@@ -559,11 +559,6 @@ impl Web3 {
             sqrt_price_limit_x96.into(),
         ];
         let tokens = [Token::Struct(tokens)];
-        let payload = encode_call(
-            "exactInputSingle((address,address,uint24,address,uint256,uint256,uint256,uint160))",
-            &tokens,
-        )
-        .unwrap();
 
         // default gas limit multiplier
         let mut options = options.unwrap_or_default();
@@ -596,11 +591,12 @@ impl Web3 {
             }
         }
 
-        trace!("payload is  {:?}", payload);
+        trace!("tokens  {:?}", tokens);
         let txid = self
             .send_transaction(
                 router,
-                payload,
+                "exactInputSingle((address,address,uint24,address,uint256,uint256,uint256,uint160))",
+                &tokens,
                 0u32.into(),
                 eth_address,
                 eth_private_key,
@@ -808,11 +804,6 @@ impl Web3 {
             sqrt_price_limit_x96.into(),
         ];
         let tokens = [Token::Struct(tokens)];
-        let payload = encode_call(
-            "exactInputSingle((address,address,uint24,address,uint256,uint256,uint256,uint160))",
-            &tokens,
-        )
-        .unwrap();
 
         // default gas limit multiplier
         let mut options = options.unwrap_or_default();
@@ -823,11 +814,12 @@ impl Web3 {
             options.push(SendTxOption::GasLimitMultiplier(glm));
         }
 
-        debug!("payload is  {:?}", payload);
+        debug!("tokens  {:?}", tokens);
         let txid = self
             .send_transaction(
                 router,
-                payload,
+                "exactInputSingle((address,address,uint24,address,uint256,uint256,uint256,uint160))",
+            &tokens,
                 amount,
                 eth_address,
                 eth_private_key,
