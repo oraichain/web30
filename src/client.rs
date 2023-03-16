@@ -74,7 +74,7 @@ impl Web3 {
             Self {
                 jsonrpc_client: Arc::new(HttpClient::new(url)),
                 timeout,
-                check_sync: true,
+                check_sync: false,
                 headers,
                 tron: None,
             }
