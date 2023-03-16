@@ -415,14 +415,17 @@ impl Web3 {
     pub async fn eth_get_latest_block(&self) -> Result<ConciseBlock, Web3Error> {
         match self.eth_syncing().await? {
             false => {
-                self.jsonrpc_client
+                let result = self
+                    .jsonrpc_client
                     .request_method(
                         "eth_getBlockByNumber",
                         ("latest", false),
                         self.timeout,
                         &self.headers,
                     )
-                    .await
+                    .await;
+                println!("eth get latest block: {:?}", result);
+                return result;
             }
             _ => Err(Web3Error::SyncingNode(
                 "Cannot perform eth_get_latest_block".to_string(),
@@ -984,6 +987,17 @@ fn test_dai_block_response() {
         let val = web3.eth_get_finalized_block().await;
         let val = val.expect("Actix failure");
         assert!(val.number > 10u32.into());
+    });
+}
+
+#[test]
+fn test_tron_eth_latest_block() {
+    use actix::System;
+    let runner = System::new();
+    let web3 = Web3::new("https://nile.trongrid.io/jsonrpc", Duration::from_secs(30));
+    runner.block_on(async move {
+        let val = web3.eth_get_latest_block().await;
+        println!("{val:?}");
     });
 }
 

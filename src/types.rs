@@ -276,12 +276,17 @@ pub struct ConciseBlock {
     pub number: Uint256,
     #[serde(rename = "parentHash")]
     pub parent_hash: Uint256,
+    #[serde(rename = "nonce")]
+    pub nonce: Uint256,
     #[serde(rename = "receiptsRoot")]
     pub receipts_root: Uint256,
     #[serde(rename = "sha3Uncles")]
     pub sha3_uncles: Uint256,
     pub size: Uint256,
-    #[serde(rename = "stateRoot")]
+    #[serde(
+        rename = "stateRoot",
+        deserialize_with = "parse_possibly_empty_hex_val"
+    )]
     pub state_root: Uint256,
     pub timestamp: Uint256,
     #[serde(rename = "totalDifficulty")]
