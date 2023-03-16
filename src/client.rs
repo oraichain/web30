@@ -41,19 +41,23 @@ impl Web3 {
             static ref TRON_URL_REGEX: Regex = RegexBuilder::new(r#"^(.*)/jsonrpc/?(.*)$"#).build().unwrap();
         }
 
+        let mut headers = HashMap::new();
+
         if let Some(matched) = TRON_URL_REGEX.captures(url) {
             let (tron_url, api_key) = (&matched[1], &matched[2]);
 
             // add api key for some providers following eth rpc standard
-            let headers = match tron_url {
-                "https://api.trongrid.io" => {
-                    HashMap::from([("TRON-PRO-API-KEY".to_string(), api_key.to_string())])
-                }
-                "https://trx.getblock.io/mainnet/fullnode" => {
-                    HashMap::from([("x-api-key".to_string(), api_key.to_string())])
-                }
-                _ => HashMap::new(),
-            };
+            if !api_key.is_empty() {
+                match tron_url {
+                    "https://api.trongrid.io" => {
+                        headers.insert("TRON-PRO-API-KEY".to_string(), api_key.to_string());
+                    }
+                    "https://trx.getblock.io/mainnet/fullnode" => {
+                        headers.insert("x-api-key".to_string(), api_key.to_string());
+                    }
+                    _ => {}
+                };
+            }
 
             let mut tron = RpcClient::new(tron_url, timeout).expect("Invalid url format");
             for (key, val) in &headers {
@@ -74,7 +78,7 @@ impl Web3 {
                 timeout,
                 url: url.to_string(),
                 check_sync: true,
-                headers: HashMap::new(),
+                headers,
                 tron: None,
             }
         }
