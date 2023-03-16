@@ -34,6 +34,10 @@ impl HttpClient {
         *value
     }
 
+    pub fn get_url(&self) -> String {
+        self.url.clone()
+    }
+
     pub async fn request_method<T: Serialize, R: 'static>(
         &self,
         method: &str,

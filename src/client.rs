@@ -27,12 +27,11 @@ const ETHEREUM_INTRINSIC_GAS: u32 = 21000;
 /// An instance of Web3Client.
 #[derive(Clone)]
 pub struct Web3 {
-    url: String,
     jsonrpc_client: Arc<HttpClient>,
     timeout: Duration,
     check_sync: bool,
     headers: HashMap<String, String>,
-    tron: Option<RpcClient>,
+    tron: Option<Arc<RpcClient>>,
 }
 
 impl Web3 {
@@ -65,18 +64,16 @@ impl Web3 {
             }
 
             Self {
-                jsonrpc_client: Arc::new(HttpClient::new(url)),
+                jsonrpc_client: Arc::new(HttpClient::new(&format!("{}/jsonrpc", tron_url))),
                 timeout,
-                url: format!("{}/jsonrpc", tron_url),
                 check_sync: false,
                 headers,
-                tron: Some(tron),
+                tron: Some(Arc::new(tron)),
             }
         } else {
             Self {
                 jsonrpc_client: Arc::new(HttpClient::new(url)),
                 timeout,
-                url: url.to_string(),
                 check_sync: true,
                 headers,
                 tron: None,
@@ -105,7 +102,7 @@ impl Web3 {
     }
 
     pub fn get_url(&self) -> String {
-        self.url.clone()
+        self.jsonrpc_client.get_url()
     }
 
     pub async fn eth_accounts(&self) -> Result<Vec<Address>, Web3Error> {
