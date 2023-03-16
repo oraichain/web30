@@ -29,7 +29,7 @@ pub async fn send_transaction(
         caller: &keypair.address(),
         contract: &contract.into(),
         selector,
-        parameter: &encode_tokens(&tokens),
+        parameter: &encode_tokens(tokens),
     };
 
     // Estimate energy usage
