@@ -11,13 +11,13 @@ use crate::types::{Block, Log, NewFilter, SyncingStatus, TransactionRequest, Tra
 use crate::types::{ConciseBlock, Data, SendTxOption};
 use clarity::abi::{encode_call, Token};
 use clarity::utils::bytes_to_hex_str;
-use clarity::{Address, PrivateKey, Transaction};
+use clarity::{Address, PrivateKey, Transaction, Uint256};
 use heliosphere::core::transaction::TransactionId;
 use heliosphere::RpcClient;
-use num256::Uint256;
 use num_traits::{ToPrimitive, Zero};
 use regex::{Regex, RegexBuilder};
 use std::collections::HashMap;
+use std::str::FromStr;
 use std::{cmp::min, time::Duration};
 use std::{sync::Arc, time::Instant};
 use tokio::time::sleep as delay_for;
@@ -995,6 +995,26 @@ fn test_tron_eth_latest_block() {
     runner.block_on(async move {
         let val = web3.eth_get_latest_block().await;
         println!("{val:?}");
+    });
+}
+
+#[test]
+fn test_tron_check_for_events_valset() {
+    use actix::System;
+    let runner = System::new();
+    let web3 = Web3::new("https://api.trongrid.io/jsonrpc", Duration::from_secs(30));
+
+    runner.block_on(async move {
+        let val = web3
+            .check_for_events(
+                Uint256::from(49524536u128),
+                Some(Uint256::from(49529536u128)),
+                vec![Address::from_str("0x2f1e13A482af1cc89553cDFB8BdF999155D13C35").unwrap()],
+                vec!["ValsetUpdatedEvent(uint256,uint256,uint256,address,address[],uint256[])"],
+            )
+            .await;
+        println!("{val:?}");
+        assert_eq!(val.unwrap().len(), 2)
     });
 }
 
