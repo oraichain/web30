@@ -17,7 +17,6 @@ use heliosphere::RpcClient;
 use num_traits::{ToPrimitive, Zero};
 use regex::{Regex, RegexBuilder};
 use std::collections::HashMap;
-use std::str::FromStr;
 use std::{cmp::min, time::Duration};
 use std::{sync::Arc, time::Instant};
 use tokio::time::sleep as delay_for;
@@ -1001,6 +1000,7 @@ fn test_tron_eth_latest_block() {
 #[test]
 fn test_tron_check_for_events_valset() {
     use actix::System;
+    use std::str::FromStr;
     let runner = System::new();
     let web3 = Web3::new("https://api.trongrid.io/jsonrpc", Duration::from_secs(30));
 
