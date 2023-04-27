@@ -23,4 +23,5 @@ pub mod types;
 
 pub use clarity::Address as EthAddress;
 pub use event_utils::address_to_event;
+pub use event_utils::{ContractEvent, Web3Event};
 pub use heliosphere::core::Address as TronAddress;
