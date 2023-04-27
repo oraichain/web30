@@ -39,7 +39,7 @@ where
     Self: Sized,
 {
     // impl for web3 log and tron event
-    fn from_event(input: serde_json::Map<String, serde_json::Value>) -> Result<Self, Web3Error>;
+    fn from_event(input: EventData) -> Result<Self, Web3Error>;
     fn from_events(input: Web3Event) -> Result<Vec<Self>, Web3Error>;
 }
 
