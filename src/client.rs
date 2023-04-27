@@ -4,6 +4,7 @@
 //! work on big endian. We can do better than that just crafting our own
 //! JSONRPC requests.
 //!
+use crate::event_utils::{ContractEvent, Web3Event};
 use crate::jsonrpc::client::HttpClient;
 use crate::jsonrpc::error::Web3Error;
 use crate::tron_utils;
@@ -28,7 +29,7 @@ const ETHEREUM_INTRINSIC_GAS: u32 = 21000;
 pub struct Web3 {
     pub timeout: Duration,
     pub check_sync: bool,
-    pub tron: Option<Arc<RpcClient>>,
+    tron: Option<Arc<RpcClient>>,
     jsonrpc_client: Arc<HttpClient>,
     headers: HashMap<String, String>,
 }
@@ -879,6 +880,36 @@ impl Web3 {
             }
         }
         Err(Web3Error::NoBlockProduced { time: timeout })
+    }
+
+    /// Parse events into structure.
+    pub async fn parse_events<T: ContractEvent>(
+        &self,
+        start_block: Uint256,
+        end_block: Option<Uint256>,
+        contract_address: Address,
+        event: &str,
+    ) -> Result<Vec<T>, Web3Error> {
+        // if is tron then parse as tron event
+        if let Some(tron) = &self.tron {
+            let events = tron
+                .check_for_events(
+                    start_block.to_u64().unwrap(),
+                    end_block.map(|block| block.to_u64().unwrap()),
+                    contract_address.into(),
+                    event,
+                )
+                .await
+                .unwrap();
+
+            return T::from_events(Web3Event::Events(events));
+        }
+
+        let logs = self
+            .check_for_events(start_block, end_block, vec![contract_address], vec![event])
+            .await?;
+
+        T::from_events(Web3Event::Logs(logs))
     }
 }
 struct SimulatedGas {

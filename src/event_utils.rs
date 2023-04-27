@@ -6,6 +6,7 @@ use clarity::{
     utils::bytes_to_hex_str,
 };
 use clarity::{Address, Uint256};
+use heliosphere::core::event::EventData;
 use std::time::{Duration, Instant};
 use tokio::time::sleep as delay_for;
 
@@ -26,6 +27,16 @@ fn bytes_to_data(s: &[u8]) -> String {
     let mut val = "0x".to_string();
     val.push_str(&bytes_to_hex_str(s));
     val
+}
+
+pub enum Web3Event {
+    Logs(Vec<Log>),
+    Events(Vec<EventData>),
+}
+
+pub trait ContractEvent {
+    // impl for web3 log and tron event
+    fn from_events<T: ContractEvent>(input: Web3Event) -> Result<Vec<T>, Web3Error>;
 }
 
 impl Web3 {
