@@ -28,9 +28,9 @@ const ETHEREUM_INTRINSIC_GAS: u32 = 21000;
 pub struct Web3 {
     pub timeout: Duration,
     pub check_sync: bool,
+    pub tron: Option<Arc<RpcClient>>,
     jsonrpc_client: Arc<HttpClient>,
     headers: HashMap<String, String>,
-    tron: Option<Arc<RpcClient>>,
 }
 
 impl Web3 {
