@@ -27,6 +27,7 @@ pub enum Web3Error {
     },
     BadInput(String),
     EventNotFound(String),
+    InvalidEventLog(String),
     CouldNotRemoveFilter(String),
     ClarityError(ClarityError),
     ContractCallError(String),
@@ -69,6 +70,7 @@ impl Display for Web3Error {
             Web3Error::BadInput(val) => write!(f, "Web3 bad input {val}"),
             Web3Error::FailedToSend(val) => write!(f, "Web3 Failed to send {val}"),
             Web3Error::EventNotFound(val) => write!(f, "Web3 Failed to find event {val}"),
+            Web3Error::InvalidEventLog(val) => write!(f, "Web3 InvalidEvent: {val}"),
             Web3Error::ClarityError(val) => write!(f, "ClarityError {val}"),
             Web3Error::TransactionTimeout => write!(f, "Transaction did not enter chain in time"),
             Web3Error::NoBlockProduced { time } => {
