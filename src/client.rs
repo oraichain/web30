@@ -919,7 +919,7 @@ impl Web3 {
         let event = self
             .check_for_event(start_block, end_block, contract_address, event)
             .await?;
-        T::from_events(event)
+        T::from_events(&event)
     }
 }
 struct SimulatedGas {
