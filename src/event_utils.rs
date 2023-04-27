@@ -34,9 +34,12 @@ pub enum Web3Event {
     Events(Vec<EventData>),
 }
 
-pub trait ContractEvent {
+pub trait ContractEvent
+where
+    Self: Sized,
+{
     // impl for web3 log and tron event
-    fn from_events<T: ContractEvent>(input: Web3Event) -> Result<Vec<T>, Web3Error>;
+    fn from_events(input: Web3Event) -> Result<Vec<Self>, Web3Error>;
 }
 
 impl Web3 {
