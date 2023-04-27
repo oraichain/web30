@@ -882,14 +882,14 @@ impl Web3 {
         Err(Web3Error::NoBlockProduced { time: timeout })
     }
 
-    /// Parse events into structure.
-    pub async fn parse_events<T: ContractEvent>(
+    /// check for an event, works both ethereum and tron
+    pub async fn check_for_event(
         &self,
         start_block: Uint256,
         end_block: Option<Uint256>,
         contract_address: Address,
         event: &str,
-    ) -> Result<Vec<T>, Web3Error> {
+    ) -> Result<Web3Event, Web3Error> {
         // if is tron then parse as tron event
         if let Some(tron) = &self.tron {
             let events = tron
@@ -899,17 +899,27 @@ impl Web3 {
                     contract_address.into(),
                     event,
                 )
-                .await
-                .unwrap();
-
-            return T::from_events(Web3Event::Events(events));
+                .await?;
+            return Ok(Web3Event::Events(events));
         }
 
-        let logs = self
-            .check_for_events(start_block, end_block, vec![contract_address], vec![event])
-            .await?;
+        self.check_for_events(start_block, end_block, vec![contract_address], vec![event])
+            .await
+            .map(Web3Event::Logs)
+    }
 
-        T::from_events(Web3Event::Logs(logs))
+    /// Parse events into structure.
+    pub async fn parse_event<T: ContractEvent>(
+        &self,
+        start_block: Uint256,
+        end_block: Option<Uint256>,
+        contract_address: Address,
+        event: &str,
+    ) -> Result<Vec<T>, Web3Error> {
+        let event = self
+            .check_for_event(start_block, end_block, contract_address, event)
+            .await?;
+        T::from_events(event)
     }
 }
 struct SimulatedGas {
