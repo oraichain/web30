@@ -16,7 +16,7 @@ num256 = "0.5"
 futures = "0.3"
 awc = {version = "3.1.1", default-features = false, features=["openssl", "compress-gzip", "compress-zstd"]}
 tokio = {version = "1.21", features=["macros", "time"]}
-heliosphere = {git = "https://github.com/oraichain/heliosphere.git", rev = "a28ccd0"}
+heliosphere = {git = "https://github.com/oraichain/heliosphere.git", rev = "24d2306"}
 lazy_static = "1.4"
 regex = "1.7.0"
 log = "0.4"
