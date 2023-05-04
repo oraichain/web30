@@ -1043,14 +1043,14 @@ fn test_tron_check_for_events_valset() {
     use actix::System;
     use std::str::FromStr;
     let runner = System::new();
-    let web3 = Web3::new("https://api.trongrid.io/jsonrpc", Duration::from_secs(30));
+    let web3 = Web3::new("https://nile.trongrid.io/jsonrpc/", Duration::from_secs(30));
 
     runner.block_on(async move {
-        let val = web3
+        let val: Result<Vec<Log>, Web3Error> = web3
             .check_for_events(
-                Uint256::from(49524536u128),
-                Some(Uint256::from(49529536u128)),
-                vec![Address::from_str("0x2f1e13A482af1cc89553cDFB8BdF999155D13C35").unwrap()],
+                Uint256::from(35036355u128),
+                None,
+                vec![Address::from_str("0x0E4a8618fbE005D0860dE3aA4E9e5b185f105bdF").unwrap()],
                 vec!["ValsetUpdatedEvent(uint256,uint256,uint256,address,address[],uint256[])"],
             )
             .await;
