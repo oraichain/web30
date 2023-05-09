@@ -34,7 +34,7 @@ pub enum Web3Event {
     Events(Vec<EventData>),
 }
 
-pub trait ContractEvent
+pub trait TronEvent
 where
     Self: Sized,
 {

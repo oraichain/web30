@@ -4,7 +4,7 @@
 //! work on big endian. We can do better than that just crafting our own
 //! JSONRPC requests.
 //!
-use crate::event_utils::{ContractEvent, Web3Event};
+use crate::event_utils::{TronEvent, Web3Event};
 use crate::jsonrpc::client::HttpClient;
 use crate::jsonrpc::error::Web3Error;
 use crate::tron_utils;
@@ -909,7 +909,7 @@ impl Web3 {
     }
 
     /// Parse events into structure.
-    pub async fn parse_event<T: ContractEvent>(
+    pub async fn parse_event<T: TronEvent>(
         &self,
         start_block: Uint256,
         end_block: Option<Uint256>,
