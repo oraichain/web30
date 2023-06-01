@@ -31,6 +31,7 @@ pub struct Web3 {
     pub check_sync: bool,
     tron: Option<Arc<RpcClient>>,
     jsonrpc_client: Arc<HttpClient>,
+    url: String,
     headers: HashMap<String, String>,
 }
 
@@ -62,13 +63,14 @@ impl Web3 {
             for (key, val) in &headers {
                 tron.set_header(key, val);
             }
-
+            let url = format!("{}/jsonrpc", tron_url);
             Self {
-                jsonrpc_client: Arc::new(HttpClient::new(&format!("{}/jsonrpc", tron_url))),
+                jsonrpc_client: Arc::new(HttpClient::new(&url)),
                 timeout,
                 check_sync: false,
                 headers,
                 tron: Some(Arc::new(tron)),
+                url,
             }
         } else {
             Self {
@@ -77,6 +79,7 @@ impl Web3 {
                 check_sync: false,
                 headers,
                 tron: None,
+                url: url.to_string(),
             }
         }
     }
@@ -891,16 +894,18 @@ impl Web3 {
         event: &str,
     ) -> Result<Web3Event, Web3Error> {
         // if is tron then parse as tron event
-        if let Some(tron) = &self.tron {
-            let events = tron
-                .check_for_events(
-                    start_block.to_u64().unwrap(),
-                    end_block.map(|block| block.to_u64().unwrap()),
-                    contract_address.into(),
-                    event,
-                )
-                .await?;
-            return Ok(Web3Event::Events(events));
+        if !self.url.contains("quiknode") {
+            if let Some(tron) = &self.tron {
+                let events = tron
+                    .check_for_events(
+                        start_block.to_u64().unwrap(),
+                        end_block.map(|block| block.to_u64().unwrap()),
+                        contract_address.into(),
+                        event,
+                    )
+                    .await?;
+                return Ok(Web3Event::Events(events));
+            }
         }
 
         self.check_for_events(start_block, end_block, vec![contract_address], vec![event])
@@ -1031,7 +1036,7 @@ fn test_dai_block_response() {
 fn test_tron_eth_latest_block() {
     use actix::System;
     let runner = System::new();
-    let web3 = Web3::new("https://nile.trongrid.io/jsonrpc", Duration::from_secs(30));
+    let web3 = Web3::new("https://api.trongrid.io/jsonrpc", Duration::from_secs(30));
     runner.block_on(async move {
         let val = web3.eth_get_latest_block().await;
         println!("{val:?}");

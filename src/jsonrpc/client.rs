@@ -61,13 +61,15 @@ impl HttpClient {
         };
 
         trace!("response headers {:?}", res.headers());
+        info!("response status {:?}", res.status());
         let request_size_limit = get_buffer_size();
         trace!("using buffer size of {}", request_size_limit);
         let decoded: Response<R> = match res.json().limit(request_size_limit).await {
             Ok(val) => val,
             Err(e) => {
                 return Err(Web3Error::BadResponse(format!(
-                    "Size Limit {request_size_limit} Web3 Error {e}"
+                    "Size Limit {request_size_limit} Web3 Error {e} with res body: {:?}",
+                    res.body().await.unwrap(),
                 )))
             }
         };
