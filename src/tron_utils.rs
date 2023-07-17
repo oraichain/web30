@@ -1,5 +1,5 @@
 use clarity::{
-    abi::{encode_tokens, Token},
+    abi::{encode_tokens, AbiToken as Token},
     Address as EthAddress, PrivateKey, Uint256,
 };
 use heliosphere::{

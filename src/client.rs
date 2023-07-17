@@ -10,7 +10,7 @@ use crate::jsonrpc::error::Web3Error;
 use crate::tron_utils;
 use crate::types::{Block, Log, NewFilter, SyncingStatus, TransactionRequest, TransactionResponse};
 use crate::types::{ConciseBlock, Data, SendTxOption};
-use clarity::abi::{encode_call, Token};
+use clarity::abi::{encode_call, AbiToken as Token};
 use clarity::utils::bytes_to_hex_str;
 use clarity::{Address, PrivateKey, Transaction, Uint256};
 use heliosphere::core::transaction::TransactionId;
@@ -670,7 +670,7 @@ impl Web3 {
             gas_price = our_balance / gas_limit;
         }
 
-        let transaction = Transaction {
+        let transaction = Transaction::Legacy {
             to: to_address,
             nonce,
             gas_price,
@@ -682,12 +682,7 @@ impl Web3 {
 
         let transaction = transaction.sign(&secret, Some(network_id));
 
-        self.eth_send_raw_transaction(
-            transaction
-                .to_bytes()
-                .expect("transaction.to_bytes() failed"),
-        )
-        .await
+        self.eth_send_raw_transaction(transaction.to_bytes()).await
     }
 
     /// Simulates an Ethereum contract call by making a fake transaction and sending it to a special endpoint

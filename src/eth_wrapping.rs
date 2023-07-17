@@ -1,6 +1,6 @@
 use crate::amm::WETH_CONTRACT_ADDRESS;
 use crate::{client::Web3, jsonrpc::error::Web3Error};
-use clarity::abi::Token;
+use clarity::abi::AbiToken as Token;
 use clarity::Address;
 use clarity::{PrivateKey, Uint256};
 use std::time::Duration;

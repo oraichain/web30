@@ -2,7 +2,7 @@
 use crate::{client::Web3, types::NewFilter};
 use crate::{jsonrpc::error::Web3Error, types::Log};
 use clarity::{
-    abi::{derive_signature, SerializedToken, Token},
+    abi::{derive_signature, AbiToken as Token, SerializedToken},
     utils::bytes_to_hex_str,
 };
 use clarity::{Address, Uint256};

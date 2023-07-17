@@ -2,7 +2,7 @@
 use crate::{client::Web3, jsonrpc::error::Web3Error, types::SendTxOption};
 use clarity::utils::display_uint256_as_address;
 use clarity::{
-    abi::{encode_call, Token},
+    abi::{encode_call, AbiToken as Token},
     constants::{tt160m1, tt24m1},
     Address, PrivateKey, Uint256,
 };

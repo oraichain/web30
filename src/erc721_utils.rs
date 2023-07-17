@@ -4,7 +4,7 @@ use crate::{client::Web3, types::SendTxOption};
 use clarity::constants::zero_address;
 use clarity::Address as EthAddress;
 use clarity::{abi::encode_call, PrivateKey as EthPrivateKey};
-use clarity::{abi::Token, Address, Uint256};
+use clarity::{abi::AbiToken as Token, Address, Uint256};
 use std::time::Duration;
 use tokio::time::timeout as future_timeout;
 
