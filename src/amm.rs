@@ -91,7 +91,7 @@ impl Web3 {
         let payload = encode_call("getAmountsOut(uint256,address[])", &tokens)?;
         trace!("payload is {:02X?}", payload);
         let amounts_bytes = self
-            .simulate_transaction(router, 0u8.into(), payload, caller_address, None)
+            .simulate_transaction(router, payload, caller_address, None)
             .await?;
         trace!("getAmountsOut response is {:02X?}", amounts_bytes);
 
@@ -335,7 +335,7 @@ impl Web3 {
             &tokens,
         )?;
         let result = self
-            .simulate_transaction(quoter, 0u8.into(), payload, caller_address, None)
+            .simulate_transaction(quoter, payload, caller_address, None)
             .await?;
         trace!("result is {:?}", result);
 
@@ -855,7 +855,7 @@ impl Web3 {
         let payload = encode_call("getPool(address,address,uint24)", &tokens)?;
 
         let pool_result = self
-            .simulate_transaction(factory, 0u8.into(), payload, caller_address, None)
+            .simulate_transaction(factory, payload, caller_address, None)
             .await?;
         trace!("pool result is {:X?}", pool_result);
         let zero_result = vec![0; 32];
@@ -893,7 +893,7 @@ impl Web3 {
         let token_name = if get_token_0 { "token0" } else { "token1" };
         let payload = encode_call(&format!("{token_name}()"), &[]).unwrap();
         let token_result = self
-            .simulate_transaction(pool_addr, 0u8.into(), payload, caller_address, None)
+            .simulate_transaction(pool_addr, payload, caller_address, None)
             .await?;
         trace!("token_result: {:X?}", token_result);
         let result_len = token_result.len();
@@ -921,7 +921,7 @@ impl Web3 {
     ) -> Result<Vec<u8>, Web3Error> {
         let payload = encode_call("slot0()", &[]).unwrap();
         let slot0_result = self
-            .simulate_transaction(pool_addr, 0u8.into(), payload, caller_address, None)
+            .simulate_transaction(pool_addr, payload, caller_address, None)
             .await?;
         trace!("slot0_result: {:X?}", slot0_result);
 

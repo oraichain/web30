@@ -26,7 +26,7 @@ impl Web3 {
         let payload = encode_call("getApproved(uint256)", &[Token::Uint(token_id)])?;
 
         let val = self
-            .simulate_transaction(erc721, 0u8.into(), payload, own_address, None)
+            .simulate_transaction(erc721, payload, own_address, None)
             .await?;
 
         let mut data: [u8; 20] = Default::default();
@@ -151,7 +151,7 @@ impl Web3 {
     ) -> Result<String, Web3Error> {
         let payload = encode_call("name()", &[])?;
         let name = self
-            .simulate_transaction(erc721, 0u8.into(), payload, caller_address, None)
+            .simulate_transaction(erc721, payload, caller_address, None)
             .await?;
 
         match String::from_utf8(name) {
@@ -178,7 +178,7 @@ impl Web3 {
     ) -> Result<String, Web3Error> {
         let payload = encode_call("symbol()", &[])?;
         let symbol = self
-            .simulate_transaction(erc721, 0u8.into(), payload, caller_address, None)
+            .simulate_transaction(erc721, payload, caller_address, None)
             .await?;
 
         match String::from_utf8(symbol) {
@@ -205,7 +205,7 @@ impl Web3 {
     ) -> Result<Uint256, Web3Error> {
         let payload = encode_call("totalSupply()", &[])?;
         let decimals = self
-            .simulate_transaction(erc721, 0u8.into(), payload, caller_address, None)
+            .simulate_transaction(erc721, payload, caller_address, None)
             .await?;
 
         Ok(Uint256::from_be_bytes(match decimals.get(0..32) {
@@ -229,7 +229,7 @@ impl Web3 {
     ) -> Result<String, Web3Error> {
         let payload = encode_call("tokenURI(uint256)", &[Token::Uint(token_id)])?;
         let symbol = self
-            .simulate_transaction(erc721, 0u8.into(), payload, caller_address, None)
+            .simulate_transaction(erc721, payload, caller_address, None)
             .await?;
 
         match String::from_utf8(symbol) {
@@ -258,7 +258,7 @@ impl Web3 {
         let payload = encode_call("ownerOf(uint256)", &[Token::Uint(token_id)])?;
 
         let val = self
-            .simulate_transaction(erc721, 0u8.into(), payload, own_address, None)
+            .simulate_transaction(erc721, payload, own_address, None)
             .await?;
 
         let mut data: [u8; 20] = Default::default();
