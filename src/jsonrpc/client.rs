@@ -61,7 +61,7 @@ impl HttpClient {
         };
 
         trace!("response headers {:?}", res.headers());
-        info!("response status {:?}", res.status());
+        trace!("response status {:?}", res.status());
         let request_size_limit = get_buffer_size();
         trace!("using buffer size of {}", request_size_limit);
         let decoded: Response<R> = match res.json().limit(request_size_limit).await {
