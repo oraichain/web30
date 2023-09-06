@@ -2,6 +2,7 @@ use awc::error::SendRequestError as ActixError;
 use clarity::Error as ClarityError;
 use clarity::Uint256;
 use heliosphere::Error as TronError;
+use std::error::Error;
 use std::fmt::Display;
 use std::fmt::Formatter;
 use std::fmt::Result;
@@ -108,4 +109,4 @@ impl Display for Web3Error {
     }
 }
 
-// impl StdError for Web3Error {}
+impl Error for Web3Error {}
