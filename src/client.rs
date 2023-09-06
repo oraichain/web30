@@ -894,18 +894,16 @@ impl Web3 {
         event: &str,
     ) -> Result<Web3Event, Web3Error> {
         // if is tron then parse as tron event
-        if !self.url.contains("quiknode") {
-            if let Some(tron) = &self.tron {
-                let events = tron
-                    .check_for_events(
-                        start_block.to_u64().unwrap(),
-                        end_block.map(|block| block.to_u64().unwrap()),
-                        contract_address.into(),
-                        event,
-                    )
-                    .await?;
-                return Ok(Web3Event::Events(events));
-            }
+        if let Some(tron) = &self.tron {
+            let events = tron
+                .check_for_events(
+                    start_block.to_u64().unwrap(),
+                    end_block.map(|block| block.to_u64().unwrap()),
+                    contract_address.into(),
+                    event,
+                )
+                .await?;
+            return Ok(Web3Event::Events(events));
         }
 
         self.check_for_events(start_block, end_block, vec![contract_address], vec![event])
