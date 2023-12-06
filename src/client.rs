@@ -23,6 +23,7 @@ use std::{sync::Arc, time::Instant};
 use tokio::time::sleep as delay_for;
 
 const ETHEREUM_INTRINSIC_GAS: u32 = 21000;
+const TRON_RPC_USING_ETH_INTERFACE: [&'static str; 1] = ["quiknode"];
 
 /// An instance of Web3Client.
 #[derive(Clone)]
@@ -885,6 +886,13 @@ impl Web3 {
         Err(Web3Error::NoBlockProduced { time: timeout })
     }
 
+    fn is_tron_rpc_new_interface_version(&self) -> bool {
+        TRON_RPC_USING_ETH_INTERFACE
+            .into_iter()
+            .find(|rpc| self.url.contains(rpc))
+            .is_none()
+    }
+
     /// check for an event, works both ethereum and tron
     pub async fn check_for_event(
         &self,
@@ -893,17 +901,21 @@ impl Web3 {
         contract_address: Address,
         event: &str,
     ) -> Result<Web3Event, Web3Error> {
-        // if is tron then parse as tron event
-        if let Some(tron) = &self.tron {
-            let events = tron
-                .check_for_events(
-                    start_block.to_u64().unwrap(),
-                    end_block.map(|block| block.to_u64().unwrap()),
-                    contract_address.into(),
-                    event,
-                )
-                .await?;
-            return Ok(Web3Event::Events(events));
+        // exclude RPCS domains using old eth interfaces like quiknode because quiknode seems to use the old interface of tron, which matches the eth's event interface
+        // other Tron RPCs use a new interface => we use tron.check_for_events
+        if self.is_tron_rpc_new_interface_version() {
+            // if is tron then parse as tron event
+            if let Some(tron) = &self.tron {
+                let events = tron
+                    .check_for_events(
+                        start_block.to_u64().unwrap(),
+                        end_block.map(|block| block.to_u64().unwrap()),
+                        contract_address.into(),
+                        event,
+                    )
+                    .await?;
+                return Ok(Web3Event::Events(events));
+            }
         }
 
         self.check_for_events(start_block, end_block, vec![contract_address], vec![event])
@@ -1039,6 +1051,18 @@ fn test_tron_eth_latest_block() {
         let val = web3.eth_get_latest_block().await;
         println!("{val:?}");
     });
+}
+
+#[test]
+fn test_is_tron_rpc_using_new_version_should_return_true() {
+    let web3 = Web3::new("https://api.trongrid.io/jsonrpc", Duration::from_secs(30));
+    assert_eq!(web3.is_tron_rpc_new_interface_version(), true);
+}
+
+#[test]
+fn test_is_tron_rpc_using_new_version_should_return_false() {
+    let web3 = Web3::new("https://quiknode/jsonrpc", Duration::from_secs(30));
+    assert_eq!(web3.is_tron_rpc_new_interface_version(), false);
 }
 
 #[test]
