@@ -1086,6 +1086,20 @@ fn test_tron_check_for_events_valset() {
     });
 }
 
+#[test]
+fn test_eth_gas_price() {
+    use actix::System;
+    let runner = System::new();
+    let web3 = Web3::new(
+        "https://docs-demo.quiknode.pro",
+        Duration::from_secs(30),
+    );
+    runner.block_on(async move {
+        let val = web3.eth_gas_price().await.unwrap();
+        println!("val: {:?}", val);
+    });
+}
+
 /// Testing all function that involve a syncing node check
 #[ignore]
 #[test]
