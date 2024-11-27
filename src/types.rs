@@ -290,7 +290,8 @@ pub struct ConciseBlock {
     pub state_root: Uint256,
     pub timestamp: Uint256,
     #[serde(rename = "totalDifficulty")]
-    pub total_difficulty: Option<Uint256>,
+    #[serde(default)]
+    pub total_difficulty: Uint256,
     pub transactions: Vec<Uint256>,
     #[serde(rename = "transactionsRoot")]
     pub transactions_root: Uint256,
